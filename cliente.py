@@ -3,14 +3,12 @@ import re
 import socket
 import sys
 import threading
+import os
 
-def thread(clientSocketRecv):
+def thread(clientSocket):
     while True:
-        message = clientSocketRecv.recv(1024).decode()
-        # connection, addr = clientSocket.accept()
-        # message = connection.recv(1024)
-        print(message)
-        clientSocketRecv.close()
+        message = clientSocket.recv(1024).decode()
+        print(f'{message}\n')
 
 
 
@@ -33,17 +31,11 @@ def main():
     identifierDesconnect = re.compile('^##kill$')
 
     clientSocket = socket.socket(AF_INET, SOCK_STREAM)
-
-    # clientSocket.bind(('localhost', port))
-    # clientSocket.listen(1)
-
     clientSocket.connect((ip, port))
-
-    # clientSocketRecv, addr = clientSocket.accept()
-
-    threading.Thread(target=thread, args=(clientSocket,)).start()       # Abre uma thread para o cliente
+    threading.Thread(target=thread, args=(clientSocket,)).start()  # Abre uma thread para o cliente
     while True:
         message = input('Insert your message: ')
+        # Dividir msg em 500 bytes aq
         if re.match(identifierSub, message):
             message = message.encode()
             clientSocket.send(message)
@@ -56,10 +48,9 @@ def main():
         elif re.match(identifierDesconnect, message):
             message = message.encode()
             clientSocket.send(message)
-            break #ou quit()
+            os._exit(1)
         else:
             print('Mensagem invalida')
-    clientSocket.close()
 
 if __name__ == '__main__':
     main()

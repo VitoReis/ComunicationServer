@@ -8,6 +8,7 @@ tags = {}
 
 
 def thread(connectionSocket,addr,port):
+    global tags
     # Regex para aceitar ou não as menssagens
     identifierStartingTag = re.compile('^#[a-zA-Z0-9,.?!:;+\-*/=@$%()[\]{}]+\s[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+')
     identifierMiddleTag = re.compile('^[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+\s#[a-zA-Z0-9,.?!:;+\-*/=@$%()[\]{}]+\s[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+')
@@ -17,30 +18,32 @@ def thread(connectionSocket,addr,port):
     identifierDesconnect = re.compile('^##kill$')
     while True:
         message = connectionSocket.recv(1024).decode()
-        global tags
         if re.match(identifierSub, message):
             tag = message.split('+')[1]
             if tag in tags:
                 if addr in tags[tag]:
-                    print(f'Already subscribed +{tag}')
+                    connectionSocket.send(f'Already subscribed +{tag}')
                 else:
                     tags[tag].append(addr)
             else:
                 tags[tag] = []
                 tags[tag].append(addr)
-            print(tags)
             connectionSocket.send(f'Subscribed +{tag}'.encode())
         elif re.match(identifierUnsub, message):
             tag = message.split('+')[1]
-            if tag in tags:
-                if addr in tags[tag]:
-                    tags[tag].pop(addr)
-                    connectionSocket.send(f'Unsubscribed -{tag}'.encode())
-                    print(tags)
-                else:
+            finded = False
+            if tag in tags:                                     # Procura o endereço do usuario na tag
+                for addr in tags[tag]:
+                    if addr in tags[tag]:                       # Se encontrado ele é removido
+                        tags[tag].pop(addr)
+                        connectionSocket.send(f'Unsubscribed -{tag}'.encode())
+                        finded = True
+                        print(tags)
+                        break
+                if not finded:                                  # Se não encontrado ele não esta escrito
                     connectionSocket.send(f'Not subscribed -{tag}'.encode())
-            else:
-                connectionSocket.send('Tag does not exist'.encode())
+            else:                                               # Caso contrario a tag n existe
+                connectionSocket.send(f'Not subscribed -{tag}'.encode())
         elif re.match(identifierStartingTag, message) or re.match(identifierMiddleTag, message) or re.match(identifierEndingTag, message):
             i = 0
             findTag = message.split()
@@ -60,12 +63,16 @@ def thread(connectionSocket,addr,port):
         sys.exit()
 
 def main():
-    serverSocket = socket.socket(AF_INET, SOCK_STREAM)
     if len(sys.argv) == 2:
         port = int(sys.argv[1])
     else:
         port = int(input('Insert the port: '))
-    serverSocket.bind(('', port))
+
+    if socket.has_dualstack_ipv6():
+        serverSocket = socket.create_server(('', port), family=socket.AF_INET6, dualstack_ipv6=True)
+    else:
+        serverSocket = socket.create_server(('', port))
+    # serverSocket.bind(('', port))
     serverSocket.listen(1)
     print('The server is ready to receive')
     while True:
