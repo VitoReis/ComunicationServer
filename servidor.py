@@ -3,6 +3,7 @@ import threading
 import socket
 import sys
 import re
+import os
 
 tags = {}
 
@@ -30,12 +31,12 @@ def thread(connectionSocket,addr,port):
                 tags[tag].append(addr)
             connectionSocket.send(f'Subscribed +{tag}'.encode())
         elif re.match(identifierUnsub, message):
-            tag = message.split('+')[1]
+            tag = message.split('-')[1]
             finded = False
             if tag in tags:                                     # Procura o endereço do usuario na tag
                 for addr in tags[tag]:
                     if addr in tags[tag]:                       # Se encontrado ele é removido
-                        tags[tag].pop(addr)
+                        tags.pop(tag[addr])
                         connectionSocket.send(f'Unsubscribed -{tag}'.encode())
                         finded = True
                         print(tags)
@@ -56,11 +57,10 @@ def thread(connectionSocket,addr,port):
                 for addr in tags.get(tag):
                     connectionSocket.sendto(message.encode(), (addr,port))
         elif re.match(identifierDesconnect, message):
-            connectionSocket.send('Closing server'.encode())
-            break
+            tags = {}
+            os._exit(1)
         else:
             connectionSocket.send('Invalid message'.encode())
-        sys.exit()
 
 def main():
     if len(sys.argv) == 2:
@@ -81,3 +81,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Falta as strings de 500 bytes, reconhecer mais de 1 tag na frase e remover inscrição
