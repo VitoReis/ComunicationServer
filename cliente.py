@@ -29,7 +29,8 @@ def main():
     identifierEndingTag = re.compile('^[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+\s#[a-zA-Z0-9,.?!:;+\-*/=@$%()[\]{}]+')
     identifierSub = re.compile('^\+[a-zA-Z0-9]+$')
     identifierUnsub = re.compile('^\-[a-zA-Z0-9]+$')
-    identifierDesconnect = re.compile('^##kill$')
+    identifierDesconnect = re.compile('^#quit$')
+    identifierKill = re.compile('^##kill$')
 
     clientSocket = socket.socket(AF_INET, SOCK_STREAM)
     clientSocket.connect((ip, port))
@@ -54,12 +55,17 @@ def main():
             clientSocket.send(message)
         elif re.match(identifierDesconnect, message):
             message = message.encode()
-            if len(message) > 500:
-                print('String to large')
+            clientSocket.send(message)
+            os._exit(1)
+        elif re.match(identifierKill, message):
+            message = message.encode()
             clientSocket.send(message)
             os._exit(1)
         else:
-            print('Mensagem invalida')
+            message = message.encode()
+            if len(message) > 500:
+                print('String to large')
+            clientSocket.send(message)
 
 if __name__ == '__main__':
     main()

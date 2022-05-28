@@ -16,7 +16,8 @@ def thread(connectionSocket,addr,port):
     identifierEndingTag = re.compile('^[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+\s#[a-zA-Z0-9,.?!:;+\-*/=@$%()[\]{}]+')
     identifierSub = re.compile('^\+[a-zA-Z0-9]+$')
     identifierUnsub = re.compile('^\-[a-zA-Z0-9]+$')
-    identifierDesconnect = re.compile('^##kill$')
+    identifierDesconnect = re.compile('^#quit$')
+    identifierKill = re.compile('^##kill$')
     while True:
         message = connectionSocket.recv(500).decode()
         if re.match(identifierSub, message):
@@ -65,10 +66,21 @@ def thread(connectionSocket,addr,port):
                             addrs.append(addr)
             for addresses in addrs:
                 connectionSocket.sendto(message.encode(), (addresses, port))
-
         elif re.match(identifierDesconnect, message):
+            list = []
+            for t in tags:                  # Para cada tag
+                if addr in tags[t]:         # Verifica se o cliente esta na tag
+                    for a in tags[t]:       # Se estiver remove ele da tag
+                            if a == addr:
+                                continue
+                            else:
+                                list.append(a)
+                    tags[t] = list          # Salva a lista sem o cliente na tag
+            break
+        elif re.match(identifierKill, message):
             print(tags)
             tags = {}
+            print(tags)
             os._exit(1)
         else:
             connectionSocket.send('Invalid message'.encode())
@@ -83,7 +95,6 @@ def main():
         serverSocket = socket.create_server(('', port), family=socket.AF_INET6, dualstack_ipv6=True)
     else:
         serverSocket = socket.create_server(('', port))
-    # serverSocket.bind(('', port))
     serverSocket.listen(1)
     print('The server is ready to receive')
     while True:
