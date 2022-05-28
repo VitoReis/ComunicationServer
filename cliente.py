@@ -37,18 +37,25 @@ def main():
     while True:
         time.sleep(0.05)
         message = input('Insert your message: ')
-        # Dividir msg em 500 bytes aq
         if re.match(identifierSub, message):
             message = message.encode()
+            if len(message) > 500:
+                print('String to large')
             clientSocket.send(message)
         elif re.match(identifierUnsub, message):
             message = message.encode()
+            if len(message) > 500:
+                print('String to large')
             clientSocket.send(message)
         elif re.match(identifierStartingTag, message) or re.match(identifierMidleTag, message) or re.match(identifierEndingTag, message):
             message = message.encode()
+            if len(message) > 500:
+                print('String to large')
             clientSocket.send(message)
         elif re.match(identifierDesconnect, message):
             message = message.encode()
+            if len(message) > 500:
+                print('String to large')
             clientSocket.send(message)
             os._exit(1)
         else:
