@@ -14,6 +14,7 @@ def thread(connectionSocket,addr,port):
     identifierStartingTag = re.compile('^#[a-zA-Z0-9,.?!:;+\-*/=@$%()[\]{}]+\s[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+')
     identifierMiddleTag = re.compile('^[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+\s#[a-zA-Z0-9,.?!:;+\-*/=@$%()[\]{}]+\s[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+')
     identifierEndingTag = re.compile('^[a-zA-Z0-9,.?!:;+\-*/=@#$%()[\]{}\s]+\s#[a-zA-Z0-9,.?!:;+\-*/=@$%()[\]{}]+')
+    identifierText = re.compile('^[a-zA-Z0-9\s,.?!:;+\-*/=@#$%()[\]{}]+$')
     identifierSub = re.compile('^\+[a-zA-Z0-9]+$')
     identifierUnsub = re.compile('^\-[a-zA-Z0-9]+$')
     identifierDesconnect = re.compile('^#quit$')
@@ -45,44 +46,46 @@ def thread(connectionSocket,addr,port):
                     connectionSocket.send(f'Not subscribed -{tag}'.encode())
                 else:
                     tags[tag] = addrList
-                    connectionSocket.send(f'Not subscribed -{tag}'.encode())
+                    connectionSocket.send(f'Unsubscribed -{tag}'.encode())
             else:                                               # Caso contrario a tag n existe
                 connectionSocket.send(f'Not subscribed -{tag}'.encode())
-        elif re.match(identifierStartingTag, message) or re.match(identifierMiddleTag, message) or re.match(identifierEndingTag, message):
+        elif re.match(identifierStartingTag, message) or \
+             re.match(identifierMiddleTag, message) or \
+             re.match(identifierEndingTag, message):
             i = 0
             tagList = []
             addrs = []
             findTag = message.split()
-            while i < len(findTag):                             # Encontra a tag
+            while i < len(findTag):                         # Encontra as tags da mensagem e salva em uma lista
                 if findTag[i].startswith('#'):
-                    tagList.append(findTag[i].split('#')[1])    # Salva a tag
+                    tagList.append(findTag[i].split('#')[1])
                 i += 1
-            for t in tags:                                      # Para cada tag salva pelo servidor
-                if t in tagList:                                # Se a tag esta na palavra
-                    for a in tags.get(t):                       # Para cada addr incrito na tag
-                        if a in addrs or a == addr:             # Se addr ja foi salvo na lista ignore
+            for t in tags:                                  # Salva os endereços inscritos nas tags da mensagem enviada
+                if t in tagList:
+                    for a in tags.get(t):
+                        if a in addrs or a == addr:
                             continue
-                        else:                                   # Se não adicione na lista
+                        else:
                             addrs.append(addr)
-            for addresses in addrs:
+            for addresses in addrs:                         # Envia a mensagem para os endereços salvos na lista
                 connectionSocket.sendto(message.encode(), (addresses, port))
         elif re.match(identifierDesconnect, message):
             list = []
-            for t in tags:                  # Para cada tag
-                if addr in tags[t]:         # Verifica se o cliente esta na tag
-                    for a in tags[t]:       # Se estiver remove ele da tag
+            for t in tags:                      # Encontra as tags que o cliente esta inscrito e o remove da lista
+                if addr in tags[t]:
+                    for a in tags[t]:
                             if a == addr:
                                 continue
                             else:
                                 list.append(a)
-                    tags[t] = list          # Salva a lista sem o cliente na tag
-            break
+                    tags[t] = list
+            break                               # Sai do loop da thread para finaliza-la
         elif re.match(identifierKill, message):
-            print(tags)
             tags = {}
-            print(tags)
             os._exit(1)
-        else:
+        elif re.match(identifierText, message):         # Reconhece um texto sem tags e responde o cliente que recebeu
+            connectionSocket.send('Message received'.encode())
+        else:                                           # Reconhece um texto invalido e responde ao cliente
             connectionSocket.send('Invalid message'.encode())
 
 def main():
@@ -98,10 +101,8 @@ def main():
     serverSocket.listen(1)
     print('The server is ready to receive')
     while True:
-        connectionSocket, addr = serverSocket.accept()                                      # Aceita a conexão
-        threading.Thread(target=thread, args=(connectionSocket,addr[0],port,)).start()      # Abre uma thread para o cliente
+        connectionSocket, addr = serverSocket.accept()
+        threading.Thread(target=thread, args=(connectionSocket,addr[0],port,)).start()
 
 if __name__ == '__main__':
     main()
-
-# Falta as strings de 500 bytes
