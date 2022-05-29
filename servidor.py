@@ -31,7 +31,7 @@ def thread(connectionSocket,addr,port):
             else:
                 tags[tag] = []
                 tags[tag].append(addr)
-            connectionSocket.send(f'Subscribed +{tag}'.encode())
+                connectionSocket.send(f'Subscribed +{tag}'.encode())
         elif re.match(identifierUnsub, message):
             addrList = []
             tag = message.split('-')[1]

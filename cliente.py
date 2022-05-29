@@ -33,7 +33,7 @@ def main():
 
     clientSocket = socket.socket(AF_INET, SOCK_STREAM)
     clientSocket.connect((ip, port))
-    threading.Thread(target=thread, args=(clientSocket,)).start()  # Abre uma thread para o cliente
+    threading.Thread(target=thread, args=(clientSocket,)).start()  # Abre uma thread para o cliente escutar
     while True:
         time.sleep(0.05)                            #Time sleep para receber o cliente
         message = input('Insert your message: ')
